@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# ANSI color codes
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[0;33m'
+MAGENTA='\033[0;35m'
+WHITE='\033[0;37m'  # White for IP Address
+NC='\033[0m'        # No Color
+
+# Following the log file
+tail -f -n 1000 /home/accountname/access-logs/yoursite.com-ssl_log | awk -v red="$RED" -v green="$GREEN" -v blue="$BLUE" -v yellow="$YELLOW" -v magenta="$MAGENTA" -v white="$WHITE" -v nc="$NC" '
+BEGIN { prev_method = "" }
+{
+    split($4,array,"[");
+    datestamp=array[2];
+    website=$11;
+    method=$6;
+    ip=$1;
+    gsub("\"", "", method);
+
+    # Exclude specified IP addresses
+    if (ip == "73.138.243.185" || ip == "172.226.190.238") {
+        next;
+    }
+
+    # Extract OS and device information from user-agent (simplified)
+    user_agent=$0;
+    os="Unknown OS"; device="Unknown Device";
+
+    if (user_agent ~ /Windows/) { os = "Windows"; }
+    else if (user_agent ~ /Macintosh/) { os = "MacOS"; }
+    else if (user_agent ~ /Linux/) { os = "Linux"; }
+    else if (user_agent ~ /Android/) { os = "Android"; }
+    else if (user_agent ~ /iOS/) { os = "iOS"; }
+
+    if (user_agent ~ /iPhone/) { device = "iPhone"; }
+    else if (user_agent ~ /iPad/) { device = "iPad"; }
+    else if (user_agent ~ /Android/) { device = "Android Device"; }
+    else if (user_agent ~ /Macintosh/ || user_agent ~ /Mac_PowerPC/) { device = "Mac"; }
+
+    # Output with color and formatting
+    if (method == "POST") {
+        method_color = red;
+    } else if (method == "GET") {
+        method_color = green;
+    }
+
+    printf("%s %s%s%s %s%s%s %s%s%s %s%s%s\n\n\n\n\n", 
+           datestamp, 
+           white, ip, nc,        # White IP with background
+           method_color, method, nc, 
+           yellow, os, nc,
+           magenta, device, nc, 
+           website);
+}
+' 
